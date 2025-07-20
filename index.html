@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🐎 Horse Hero!</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #f0f8ff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 3em;
+      margin: 20px 0;
+    }
+
+    .screen {
+      display: none;
+      padding: 20px;
+    }
+
+    .active {
+      display: block;
+    }
+
+    img.horse {
+      width: 100px;
+      cursor: pointer;
+      margin: 10px;
+      border: 3px solid transparent;
+      border-radius: 12px;
+      transition: transform 0.2s;
+    }
+
+    img.horse:hover {
+      transform: scale(1.1);
+    }
+
+    img.horse.selected {
+      border: 3px solid green;
+    }
+
+    button {
+      padding: 12px 25px;
+      font-size: 18px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: #6c9;
+      color: #000;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #4a7;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 18px;
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Title Screen -->
+<div id="titleScreen" class="screen active">
+  <h1>🐎 Horse Hero!</h1>
+  <p>Train your horse, enter races, roll the dice, and win big!</p>
+  <button onclick="startGame()">🎮 Start Game</button>
+</div>
+
+<!-- Choose Horse -->
+<div id="chooseHorse" class="screen">
+  <h2>Choose Your Horse</h2>
+  <div>
+    <img src="horse1.png" class="horse" data-cost="100" data-food="5" data-race="10" data-prize="20" title="Cheap Horse">
+    <img src="horse2.png" class="horse" data-cost="300" data-food="10" data-race="20" data-prize="50" title="Medium Horse">
+    <img src="horse3.png" class="horse" data-cost="500" data-food="20" data-race="40" data-prize="100" title="Expensive Horse">
+    <img src="horse4.png" class="horse" data-cost="200" data-food="8" data-race="15" data-prize="30" title="Black Horse">
+    <img src="horse5.png" class="horse" data-cost="250" data-food="9" data-race="18" data-prize="40" title="White Horse">
+    <img src="horse6.png" class="horse" data-cost="150" data-food="6" data-race="12" data-prize="25" title="Beige Horse">
+  </div>
+  <button onclick="confirmHorse()">✅ Confirm Horse</button>
+</div>
+
+<!-- Name Horse -->
+<div id="nameHorse" class="screen">
+  <h2>Give Your Horse a Name</h2>
+  <input type="text" id="horseNameInput" placeholder="Horsey McHorseFace" />
+  <br>
+  <button onclick="nameHorse()">Let's Go!</button>
+</div>
+
+<!-- Game Screen -->
+<div id="sim" class="screen">
+  <h2 id="horseNameDisplay"></h2>
+  <img id="yourHorseImg" src="" style="width:150px" />
+  <p><strong>💰 Money:</strong> $<span id="money">1000</span></p>
+  <p><strong>🥕 Food Level:</strong> <span id="foodLevel">3</span></p>
+
+  <div>
+    <button onclick="buyFood()">🍏 Buy Food</button>
+    <button onclick="enterRace()">🏁 Enter Race</button>
+    <button onclick="rollDice()">🎲 Roll Dice</button>
+  </div>
+
+  <p id="message"></p>
+</div>
+
+<script>
+let state = {
+  money: 1000,
+  food: 3,
+  horse: null
+};
+
+const screens = {
+  title: document.getElementById("titleScreen"),
+  choose: document.getElementById("chooseHorse"),
+  name: document.getElementById("nameHorse"),
+  sim: document.getElementById("sim")
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove("active"));
+  screens[name].classList.add("active");
+}
+
+function startGame() {
+  showScreen("choose");
+}
+
+const horses = document.querySelectorAll(".horse");
+let selectedHorseEl = null;
+
+horses.forEach(img => {
+  img.addEventListener("click", () => {
+    horses.forEach(h => h.classList.remove("selected"));
+    img.classList.add("selected");
+    selectedHorseEl = img;
+  });
+});
+
+function confirmHorse() {
+  if (!selectedHorseEl) return alert("Choose a horse!");
+
+  state.horse = {
+    cost: +selectedHorseEl.dataset.cost,
+    foodCost: +selectedHorseEl.dataset.food,
+    raceCost: +selectedHorseEl.dataset.race,
+    prize: +selectedHorseEl.dataset.prize,
+    img: selectedHorseEl.src
+  };
+
+  if (state.money < state.horse.cost) return alert("Not enough money!");
+  state.money -= state.horse.cost;
+  showScreen("name");
+}
+
+function nameHorse() {
+  const name = document.getElementById("horseNameInput").value.trim();
+  if (!name) return alert("Enter a name!");
+  document.getElementById("horseNameDisplay").textContent = `🐴 ${name}`;
+  document.getElementById("yourHorseImg").src = state.horse.img;
+  showScreen("sim");
+  updateDisplay();
+}
+
+function buyFood() {
+  if (state.money < state.horse.foodCost) return showMessage("Not enough money to buy food!");
+  state.money -= state.horse.foodCost;
+  state.food++;
+  updateDisplay();
+  showMessage("🍎 You bought food.");
+}
+
+function enterRace() {
+  if (state.money < state.horse.raceCost) return showMessage("Not enough money to enter race!");
+  if (state.food <= 0) return showMessage("🐎 Your horse is too hungry to race!");
+  state.money -= state.horse.raceCost;
+  state.food--;
+  const win = Math.random() < 0.5 + state.food * 0.05;
+  if (win) {
+    state.money += state.horse.prize;
+    showMessage("🏆 Your horse won the race!");
+  } else {
+    showMessage("😢 Your horse lost the race.");
+  }
+  updateDisplay();
+  checkEnd();
+}
+
+function rollDice() {
+  const outcomes = [
+    { text: "🏅 Beauty contest winner! +$75", money: +75 },
+    { text: "💥 Kicked over a fence! -$60", money: -60 },
+    { text: "😷 Got sick! Vet bill -$40", money: -40 },
+    { text: "🎯 Found a coin stash! +$100", money: +100 },
+    { text: "🏡 Destroyed a stable! -$90", money: -90 },
+    { text: "📸 Filmed a commercial! +$50", money: +50 }
+  ];
+  const event = outcomes[Math.floor(Math.random() * outcomes.length)];
+  state.money += event.money;
+  updateDisplay();
+  showMessage(event.text);
+  checkEnd();
+}
+
+function showMessage(msg) {
+  document.getElementById("message").textContent = msg;
+}
+
+function updateDisplay() {
+  document.getElementById("money").textContent = state.money;
+  document.getElementById("foodLevel").textContent = state.food;
+}
+
+function checkEnd() {
+  if (state.money >= 2000) {
+    alert("🎉 You doubled your money! You win!");
+    location.reload();
+  }
+  if (state.money <= 0) {
+    alert("💸 You went bankrupt! Game over.");
+    location.reload();
+  }
+}
+</script>
+</body>
+</html>
