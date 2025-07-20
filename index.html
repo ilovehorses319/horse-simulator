@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Horse Simulation</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #f0f8ff; padding: 20px; }
+    img.horse { width: 100px; cursor: pointer; margin: 10px; border: 3px solid transparent; }
+    img.horse.selected { border: 3px solid green; }
+    .hidden { display: none; }
+    .menu-button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<h1>Horse Simulation</h1>
+<div id="game">
+  <div id="chooseHorse">
+    <p>Select Your Horse:</p>
+    <div>
+      <img src="horse_cheap.png" class="horse" data-cost="100" data-food="5" data-race="10" data-prize="20">
+      <img src="horse_medium.png" class="horse" data-cost="300" data-food="10" data-race="20" data-prize="50">
+      <img src="horse_expensive.png" class="horse" data-cost="500" data-food="20" data-race="40" data-prize="100">
+    </div>
+    <button onclick="confirmHorse()">Confirm Horse</button>
+  </div>
+
+  <div id="nameHorse" class="hidden">
+    <p>Give your horse a name:</p>
+    <input type="text" id="horseNameInput" />
+    <button onclick="nameHorse()">Start Simulation</button>
+  </div>
+
+  <div id="sim" class="hidden">
+    <h2 id="horseNameDisplay"></h2>
+    <img id="yourHorseImg" src="" style="width:150px" />
+    <p><strong>Money:</strong> $<span id="money">1000</span></p>
+    <p><strong>Food Level:</strong> <span id="foodLevel">3</span></p>
+
+    <div>
+      <button class="menu-button" onclick="buyFood()">Buy Food</button>
+      <button class="menu-button" onclick="enterRace()">Enter Race</button>
+    </div>
+
+    <p id="message"></p>
+  </div>
+</div>
+
+<script>
+let state = {
+  money: 1000,
+  food: 3,
+  horse: null
+};
+
+const horses = document.querySelectorAll(".horse");
+let selectedHorseEl = null;
+
+horses.forEach(img => {
+  img.addEventListener("click", () => {
+    horses.forEach(h => h.classList.remove("selected"));
+    img.classList.add("selected");
+    selectedHorseEl = img;
+  });
+});
+
+function confirmHorse() {
+  if (!selectedHorseEl) return alert("Choose a horse!");
+
+  state.horse = {
+    cost: +selectedHorseEl.dataset.cost,
+    foodCost: +selectedHorseEl.dataset.food,
+    raceCost: +selectedHorseEl.dataset.race,
+    prize: +selectedHorseEl.dataset.prize,
+    img: selectedHorseEl.src
+  };
+
+  if (state.money < state.horse.cost) return alert("Not enough money!");
+  state.money -= state.horse.cost;
+  document.getElementById("chooseHorse").classList.add("hidden");
+  document.getElementById("nameHorse").classList.remove("hidden");
+}
+
+function nameHorse() {
+  const name = document.getElementById("horseNameInput").value.trim();
+  if (!name) return alert("Enter a name!");
+  document.getElementById("horseNameDisplay").textContent = name;
+  document.getElementById("yourHorseImg").src = state.horse.img;
+  document.getElementById("nameHorse").classList.add("hidden");
+  document.getElementById("sim").classList.remove("hidden");
+  updateDisplay();
+}
+
+function buyFood() {
+  if (state.money < state.horse.foodCost) return showMessage("Not enough money to buy food!");
+  state.money -= state.horse.foodCost;
+  state.food++;
+  updateDisplay();
+  showMessage("You bought food.");
+}
+
+function enterRace() {
+  if (state.money < state.horse.raceCost) return showMessage("Not enough money to enter race!");
+  if (state.food <= 0) return showMessage("Your horse is too hungry to race!");
+  state.money -= state.horse.raceCost;
+  state.food--;
+  const win = Math.random() < 0.5 + state.food * 0.05;
+  if (win) {
+    state.money += state.horse.prize;
+    showMessage("Your horse won the race!");
+  } else {
+    showMessage("Your horse lost the race.");
+  }
+  updateDisplay();
+  checkEnd();
+}
+
+function showMessage(msg) {
+  document.getElementById("message").textContent = msg;
+}
+
+function updateDisplay() {
+  document.getElementById("money").textContent = state.money;
+  document.getElementById("foodLevel").textContent = state.food;
+}
+
+function checkEnd() {
+  if (state.money >= 2000) {
+    alert("Congratulations! You doubled your money!");
+    location.reload();
+  }
+  if (state.money <= 0) {
+    alert("You went bankrupt! Game over.");
+    location.reload();
+  }
+}
+</script>
+</body>
+</html>
